@@ -1,0 +1,1221 @@
+{
+  "info": {
+    "_postman_id": "pennywick-expense-tracker-api",
+    "name": "Pennywick Expense Tracker API",
+    "description": "Complete API test collection for Pennywick expense tracker with PocketBase backend.\n\nAll monetary amounts are stored as integer minor units (kobo for NGN: ₦1,500.00 = 150000 kobo).\nDates use local calendar strings (YYYY-MM-DD), month_key (YYYY-MM), and integer epoch millisecond timestamps (client_updated_at).\nDeletes are soft deletes (setting deleted_at).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.collectionVariables.set('timestamp', Date.now().toString());"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8090", "type": "string" },
+    { "key": "authToken", "value": "", "type": "string" },
+    { "key": "userId", "value": "", "type": "string" },
+    { "key": "secondAuthToken", "value": "", "type": "string" },
+    { "key": "secondUserId", "value": "", "type": "string" },
+    { "key": "categoryId", "value": "", "type": "string" },
+    { "key": "incomeCategoryId", "value": "", "type": "string" },
+    { "key": "transactionId", "value": "", "type": "string" },
+    { "key": "incomeTransactionId", "value": "", "type": "string" },
+    { "key": "budgetId", "value": "", "type": "string" },
+    { "key": "ruleId", "value": "", "type": "string" },
+    { "key": "monthlyRuleId", "value": "", "type": "string" },
+    { "key": "syncCursor", "value": "2024-01-01 00:00:00.000Z", "type": "string" },
+    { "key": "timestamp", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "1. Auth",
+      "description": "User registration, password login, and JWT token refresh.",
+      "item": [
+        {
+          "name": "Sign Up (Primary User)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 or 400 (if already exists)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "    var data = pm.response.json();",
+                  "    pm.collectionVariables.set('userId', data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@pennywick.local\",\n  \"password\": \"Pass123456!\",\n  \"passwordConfirm\": \"Pass123456!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/users/records",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "users", "records"]
+            }
+          }
+        },
+        {
+          "name": "Login (Primary User)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.test('Token returned', function () {",
+                  "    pm.expect(data.token).to.be.a('string');",
+                  "});",
+                  "pm.collectionVariables.set('authToken', data.token);",
+                  "pm.collectionVariables.set('userId', data.record.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identity\": \"user@pennywick.local\",\n  \"password\": \"Pass123456!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/users/auth-with-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "users", "auth-with-password"]
+            }
+          }
+        },
+        {
+          "name": "Token Refresh",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.collectionVariables.set('authToken', data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/users/auth-refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "users", "auth-refresh"]
+            }
+          }
+        },
+        {
+          "name": "Sign Up (Second User - Cross-Account Testing)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 or 400', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"other@pennywick.local\",\n  \"password\": \"OtherPass123!\",\n  \"passwordConfirm\": \"OtherPass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/users/records",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "users", "records"]
+            }
+          }
+        },
+        {
+          "name": "Login (Second User)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.collectionVariables.set('secondAuthToken', data.token);",
+                  "pm.collectionVariables.set('secondUserId', data.record.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identity\": \"other@pennywick.local\",\n  \"password\": \"OtherPass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/users/auth-with-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "users", "auth-with-password"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Categories",
+      "description": "Category CRUD, owner scoping, and soft delete.",
+      "item": [
+        {
+          "name": "Create Expense Category (Transport)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 Created', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.test('Has valid id', function () {",
+                  "    pm.expect(data.id).to.be.a('string');",
+                  "});",
+                  "pm.collectionVariables.set('categoryId', data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"owner\": \"{{userId}}\",\n  \"name\": \"Transport\",\n  \"kind\": \"expense\",\n  \"icon\": \"car\",\n  \"color_key\": \"cat1\",\n  \"sort_order\": 1,\n  \"archived\": false,\n  \"is_seed\": false,\n  \"client_updated_at\": {{timestamp}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/categories/records",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "categories", "records"]
+            }
+          }
+        },
+        {
+          "name": "Create Income Category (Salary)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 Created', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.collectionVariables.set('incomeCategoryId', data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"owner\": \"{{userId}}\",\n  \"name\": \"Salary\",\n  \"kind\": \"income\",\n  \"icon\": \"briefcase\",\n  \"color_key\": \"cat2\",\n  \"sort_order\": 2,\n  \"archived\": false,\n  \"is_seed\": false,\n  \"client_updated_at\": {{timestamp}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/categories/records",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "categories", "records"]
+            }
+          }
+        },
+        {
+          "name": "List User Categories",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.test('Contains items', function () {",
+                  "    pm.expect(data.items.length).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/categories/records?filter=(deleted_at=null)&sort=sort_order",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "categories", "records"],
+              "query": [
+                { "key": "filter", "value": "(deleted_at=null)" },
+                { "key": "sort", "value": "sort_order" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Category By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.test('ID matches', function () {",
+                  "    pm.expect(data.id).to.eql(pm.collectionVariables.get('categoryId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/categories/records/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "categories", "records", "{{categoryId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Category (Rename & Icon)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.test('Updated name matches', function () {",
+                  "    pm.expect(data.name).to.eql('Transport & Transit');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Transport & Transit\",\n  \"icon\": \"bus\",\n  \"client_updated_at\": {{timestamp}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/categories/records/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "categories", "records", "{{categoryId}}"]
+            }
+          }
+        },
+        {
+          "name": "Soft Delete Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.test('deleted_at set', function () {",
+                  "    pm.expect(data.deleted_at).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deleted_at\": {{timestamp}},\n  \"client_updated_at\": {{timestamp}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/categories/records/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "categories", "records", "{{categoryId}}"]
+            }
+          }
+        },
+        {
+          "name": "Restore Category (Clear deleted_at)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deleted_at\": null,\n  \"client_updated_at\": {{timestamp}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/categories/records/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "categories", "records", "{{categoryId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Transactions",
+      "description": "Expense & income logging, integer minor units (kobo), date filtering, and month_key consistency.",
+      "item": [
+        {
+          "name": "Create Expense (₦1,500 Uber ride = 150000 kobo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 Created', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.test('Amount is 150000 kobo', function () {",
+                  "    pm.expect(data.amount_minor).to.eql(150000);",
+                  "});",
+                  "pm.test('month_key derived properly', function () {",
+                  "    pm.expect(data.month_key).to.eql('2026-11');",
+                  "});",
+                  "pm.collectionVariables.set('transactionId', data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"owner\": \"{{userId}}\",\n  \"kind\": \"expense\",\n  \"amount_minor\": 150000,\n  \"category\": \"{{categoryId}}\",\n  \"occurred_on\": \"2026-11-15\",\n  \"month_key\": \"2026-11\",\n  \"note\": \"Uber ride to Victoria Island\",\n  \"client_updated_at\": {{timestamp}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/transactions/records",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "transactions", "records"]
+            }
+          }
+        },
+        {
+          "name": "Create Income (₦450,000 Consulting = 45000000 kobo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 Created', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.collectionVariables.set('incomeTransactionId', data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"owner\": \"{{userId}}\",\n  \"kind\": \"income\",\n  \"amount_minor\": 45000000,\n  \"category\": \"{{incomeCategoryId}}\",\n  \"occurred_on\": \"2026-11-01\",\n  \"month_key\": \"2026-11\",\n  \"note\": \"Client advisory milestone payout\",\n  \"client_updated_at\": {{timestamp}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/transactions/records",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "transactions", "records"]
+            }
+          }
+        },
+        {
+          "name": "List Transactions Filtered by Month Key (2026-11)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "data.items.forEach(function(tx) {",
+                  "    pm.expect(tx.month_key).to.eql('2026-11');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/transactions/records?filter=(month_key='2026-11' && deleted_at=null)&sort=-occurred_on",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "transactions", "records"],
+              "query": [
+                { "key": "filter", "value": "(month_key='2026-11' && deleted_at=null)" },
+                { "key": "sort", "value": "-occurred_on" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Transactions Filtered by Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "data.items.forEach(function(tx) {",
+                  "    pm.expect(tx.category).to.eql(pm.collectionVariables.get('categoryId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/transactions/records?filter=(category='{{categoryId}}' && deleted_at=null)",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "transactions", "records"],
+              "query": [
+                { "key": "filter", "value": "(category='{{categoryId}}' && deleted_at=null)" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Transaction By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.expect(data.id).to.eql(pm.collectionVariables.get('transactionId'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/transactions/records/{{transactionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "transactions", "records", "{{transactionId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Transaction (Change Amount and Move Month)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.test('Amount updated to ₦2,200', function () {",
+                  "    pm.expect(data.amount_minor).to.eql(220000);",
+                  "});",
+                  "pm.test('Month key shifted to 2026-10', function () {",
+                  "    pm.expect(data.month_key).to.eql('2026-10');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount_minor\": 220000,\n  \"occurred_on\": \"2026-10-28\",\n  \"month_key\": \"2026-10\",\n  \"note\": \"Uber ride with surge price\",\n  \"client_updated_at\": {{timestamp}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/transactions/records/{{transactionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "transactions", "records", "{{transactionId}}"]
+            }
+          }
+        },
+        {
+          "name": "Soft Delete Transaction",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.test('deleted_at set', function () {",
+                  "    pm.expect(data.deleted_at).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deleted_at\": {{timestamp}},\n  \"client_updated_at\": {{timestamp}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/transactions/records/{{transactionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "transactions", "records", "{{transactionId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Budgets",
+      "description": "Category budget management and limit checking.",
+      "item": [
+        {
+          "name": "Create Budget (₦60,000 for Transport = 6000000 kobo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 Created', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.test('Limit is 6000000 kobo', function () {",
+                  "    pm.expect(data.limit_minor).to.eql(6000000);",
+                  "});",
+                  "pm.collectionVariables.set('budgetId', data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"owner\": \"{{userId}}\",\n  \"category\": \"{{categoryId}}\",\n  \"limit_minor\": 6000000,\n  \"client_updated_at\": {{timestamp}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/budgets/records",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "budgets", "records"]
+            }
+          }
+        },
+        {
+          "name": "List Budgets",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.expect(data.items.length).to.be.above(0);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/budgets/records?filter=(deleted_at=null)",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "budgets", "records"],
+              "query": [
+                { "key": "filter", "value": "(deleted_at=null)" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Budget By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.expect(data.id).to.eql(pm.collectionVariables.get('budgetId'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/budgets/records/{{budgetId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "budgets", "records", "{{budgetId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Budget Limit (₦80,000 = 8000000 kobo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.expect(data.limit_minor).to.eql(8000000);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"limit_minor\": 8000000,\n  \"client_updated_at\": {{timestamp}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/budgets/records/{{budgetId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "budgets", "records", "{{budgetId}}"]
+            }
+          }
+        },
+        {
+          "name": "Soft Delete Budget",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.expect(data.deleted_at).to.be.above(0);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deleted_at\": {{timestamp}},\n  \"client_updated_at\": {{timestamp}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/budgets/records/{{budgetId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "budgets", "records", "{{budgetId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Recurring Rules",
+      "description": "Weekly and monthly recurrence rules with deterministic ID generation support.",
+      "item": [
+        {
+          "name": "Create Weekly Rule (Transport ₦2,000 every Monday)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 Created', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.test('Frequency is weekly', function () {",
+                  "    pm.expect(data.frequency).to.eql('weekly');",
+                  "});",
+                  "pm.test('Day is 1 (Monday)', function () {",
+                  "    pm.expect(data.day).to.eql(1);",
+                  "});",
+                  "pm.collectionVariables.set('ruleId', data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"owner\": \"{{userId}}\",\n  \"kind\": \"expense\",\n  \"amount_minor\": 200000,\n  \"category\": \"{{categoryId}}\",\n  \"note\": \"Weekly commute fuel/transit\",\n  \"frequency\": \"weekly\",\n  \"day\": 1,\n  \"start_on\": \"2026-11-03\",\n  \"active\": true,\n  \"client_updated_at\": {{timestamp}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/recurring_rules/records",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "recurring_rules", "records"]
+            }
+          }
+        },
+        {
+          "name": "Create Monthly Rule (Rent ₦180,000 on 1st)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 Created', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.test('Frequency is monthly', function () {",
+                  "    pm.expect(data.frequency).to.eql('monthly');",
+                  "});",
+                  "pm.collectionVariables.set('monthlyRuleId', data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"owner\": \"{{userId}}\",\n  \"kind\": \"expense\",\n  \"amount_minor\": 18000000,\n  \"category\": \"{{categoryId}}\",\n  \"note\": \"Monthly apartment service charge\",\n  \"frequency\": \"monthly\",\n  \"day\": 1,\n  \"start_on\": \"2026-11-01\",\n  \"active\": true,\n  \"client_updated_at\": {{timestamp}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/recurring_rules/records",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "recurring_rules", "records"]
+            }
+          }
+        },
+        {
+          "name": "List Recurring Rules",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.expect(data.items.length).to.be.above(0);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/recurring_rules/records?filter=(deleted_at=null)",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "recurring_rules", "records"],
+              "query": [
+                { "key": "filter", "value": "(deleted_at=null)" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Deactivate Rule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.test('Rule is inactive', function () {",
+                  "    pm.expect(data.active).to.be.false;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false,\n  \"client_updated_at\": {{timestamp}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/recurring_rules/records/{{ruleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "recurring_rules", "records", "{{ruleId}}"]
+            }
+          }
+        },
+        {
+          "name": "Soft Delete Rule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.expect(data.deleted_at).to.be.above(0);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deleted_at\": {{timestamp}},\n  \"client_updated_at\": {{timestamp}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/recurring_rules/records/{{ruleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "recurring_rules", "records", "{{ruleId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Sync Protocol",
+      "description": "Cursor pull (200/page), push coalescing, LWW timestamp tracking, and conflict 409 handling.",
+      "item": [
+        {
+          "name": "Pull Changes (Cursor >= timestamp)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.test('Page size is <= 200', function () {",
+                  "    pm.expect(data.perPage).to.be.at.most(200);",
+                  "});",
+                  "if (data.items.length > 0) {",
+                  "    pm.collectionVariables.set('syncCursor', data.items[data.items.length - 1].updated);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/transactions/records?filter=(updated>='{{syncCursor}}')&sort=updated,id&perPage=200",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "transactions", "records"],
+              "query": [
+                { "key": "filter", "value": "(updated>='{{syncCursor}}')" },
+                { "key": "sort", "value": "updated,id" },
+                { "key": "perPage", "value": "200" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Push Create (Offline Transaction Enqueue)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 Created', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.collectionVariables.set('syncTransactionId', data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"owner\": \"{{userId}}\",\n  \"kind\": \"expense\",\n  \"amount_minor\": 450000,\n  \"category\": \"{{categoryId}}\",\n  \"occurred_on\": \"2026-11-16\",\n  \"month_key\": \"2026-11\",\n  \"note\": \"Queued offline outbox drain test\",\n  \"client_updated_at\": {{timestamp}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/transactions/records",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "transactions", "records"]
+            }
+          }
+        },
+        {
+          "name": "Push Conflict (Stale client_updated_at -> Expect 409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 409 Conflict (or handled by PB hook)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([409, 400]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount_minor\": 500000,\n  \"client_updated_at\": 1000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/transactions/records/{{syncTransactionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "transactions", "records", "{{syncTransactionId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Edge Cases & Security",
+      "description": "Validation boundaries, cross-user isolation, and invalid payloads.",
+      "item": [
+        {
+          "name": "Cross-User Isolation (User 2 Reads User 1 Category -> 404/403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Forbidden or Not Found (cross-user isolation)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([403, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{secondAuthToken}}", "type": "string" }]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/categories/records/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "categories", "records", "{{categoryId}}"]
+            }
+          }
+        },
+        {
+          "name": "Validation: Zero/Negative Amount Rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"owner\": \"{{userId}}\",\n  \"kind\": \"expense\",\n  \"amount_minor\": 0,\n  \"category\": \"{{categoryId}}\",\n  \"occurred_on\": \"2026-11-16\",\n  \"month_key\": \"2026-11\",\n  \"client_updated_at\": {{timestamp}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/transactions/records",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "transactions", "records"]
+            }
+          }
+        },
+        {
+          "name": "Validation: Invalid Date Format Rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"owner\": \"{{userId}}\",\n  \"kind\": \"expense\",\n  \"amount_minor\": 100000,\n  \"category\": \"{{categoryId}}\",\n  \"occurred_on\": \"16-11-2026\",\n  \"month_key\": \"2026-11\",\n  \"client_updated_at\": {{timestamp}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/transactions/records",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "transactions", "records"]
+            }
+          }
+        },
+        {
+          "name": "Validation: month_key Mismatch Rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"owner\": \"{{userId}}\",\n  \"kind\": \"expense\",\n  \"amount_minor\": 100000,\n  \"category\": \"{{categoryId}}\",\n  \"occurred_on\": \"2026-11-16\",\n  \"month_key\": \"2026-05\",\n  \"client_updated_at\": {{timestamp}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/collections/transactions/records",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "collections", "transactions", "records"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

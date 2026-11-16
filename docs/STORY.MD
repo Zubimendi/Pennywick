@@ -70,3 +70,13 @@ Budget notifications, receipt photos, encryption at rest, multiple currencies, a
 | What if someone signs into a different account on the same phone? | The app remembers which account its data belongs to and asks the user to replace local data or cancel. It never silently merges two people's finances. |
 | CSV security? | Notes are user text; a cell starting with `=`, `+`, `-` or `@` can run as a formula in a spreadsheet. The exporter prefixes such cells with a single quote and quotes fields properly. |
 | Why PocketBase here? | Free, one binary, enough for per-user data with owner-scoped rules. The sync protocol is portable to a Go or Python service. |
+
+## Tags
+
+### Medium
+
+`react-native` `expo` `typescript` `sqlite` `drizzle-orm` `local-first` `offline-first` `expense-tracker` `mobile-development` `pocketbase` `data-sync` `integer-arithmetic` `financial-software` `zustand` `react-native-svg` `software-architecture` `side-project` `portfolio` `fullstack` `cached-aggregates` `idempotency` `last-write-wins` `outbox-pattern`
+
+### LinkedIn
+
+`#ReactNative` `#Expo` `#TypeScript` `#MobileDevelopment` `#SQLite` `#LocalFirst` `#OfflineFirst` `#ExpenseTracker` `#FinTech` `#PocketBase` `#FullStackDeveloper` `#SoftwareEngineering` `#SoftwareArchitecture` `#MobileApp` `#OpenSource` `#PortfolioProject` `#DrizzleORM` `#DataSync` `#BuildInPublic` `#DeveloperPortfolio` `#IndieHacker` `#Nigeria` `#TechInAfrica`

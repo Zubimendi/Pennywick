@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Pennywick",
+    "slug": "pennywick",
+    "version": "1.0.0",
+    "scheme": "pennywick",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#F6F8F7"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#F6F8F7"
+      },
+      "package": "com.pennywick.app"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.pennywick.app"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-sqlite"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
