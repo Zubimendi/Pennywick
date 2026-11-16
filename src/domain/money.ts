@@ -1,11 +1,15 @@
-const CURRENCY_SYMBOLS: Record<string, string> = {
+// src/domain/money.ts
+// Strict integer minor unit (kobo/cents) arithmetic and formatting.
+// Floating point values are strictly forbidden for stored amounts.
+
+export const CURRENCY_SYMBOLS: Record<string, string> = {
   NGN: '₦',
   USD: '$',
   EUR: '€',
   GBP: '£',
 };
 
-const CURRENCY_NAMES: Record<string, string> = {
+export const CURRENCY_NAMES: Record<string, string> = {
   NGN: 'naira',
   USD: 'dollars',
   EUR: 'euros',
@@ -36,7 +40,19 @@ export function formatMoney(
 }
 
 /**
- * Convert small integer amounts to readable words for screen readers
+ * Format major decimal string for CSV export (e.g. 150000 -> "1500.00")
+ */
+export function formatDecimalAmount(amountMinor: number): string {
+  const isNegative = amountMinor < 0;
+  const absMinor = Math.abs(amountMinor);
+  const major = Math.floor(absMinor / 100);
+  const cents = absMinor % 100;
+  const formatted = `${major}.${cents.toString().padStart(2, '0')}`;
+  return isNegative ? `-${formatted}` : formatted;
+}
+
+/**
+ * Convert small integer amounts to readable words for accessibility screen readers
  */
 export function amountToWords(amountMinor: number, currency = 'NGN'): string {
   const absMinor = Math.abs(amountMinor);
@@ -69,7 +85,7 @@ export function parseAmount(input: string): number {
     throw new Error('Invalid amount: multiple decimal points');
   }
 
-  const integerPart = parts[0] ?? '0';
+  const integerPart = parts[0] === '' ? '0' : parts[0];
   const decimalPart = parts[1] ?? '';
 
   if (integerPart.length > 12) {
@@ -88,4 +104,50 @@ export function parseAmount(input: string): number {
   const minor = parseInt(minorFraction, 10);
 
   return major * 100 + (isNaN(minor) ? 0 : minor);
+}
+
+/**
+ * Apply keypad keystroke to an existing input string:
+ * - '0'..'9': append if within limits (max 12 integer digits, max 2 decimals)
+ * - '.': append if none exists yet
+ * - 'backspace': delete last character
+ * - 'clear': clear to empty
+ */
+export function applyKeypadInput(current: string, key: string): string {
+  if (key === 'clear') {
+    return '';
+  }
+
+  if (key === 'backspace') {
+    return current.slice(0, -1);
+  }
+
+  if (key === '.') {
+    if (current.includes('.')) {
+      return current; // already has decimal point
+    }
+    return current === '' ? '0.' : `${current}.`;
+  }
+
+  if (/^[0-9]$/.test(key)) {
+    const parts = current.split('.');
+    if (parts.length === 1) {
+      // In integer part
+      if (current === '0') {
+        return key; // replace leading zero
+      }
+      if (parts[0].length >= 12) {
+        return current; // max 12 digits
+      }
+      return `${current}${key}`;
+    } else {
+      // In decimal part
+      if (parts[1].length >= 2) {
+        return current; // max 2 decimals
+      }
+      return `${current}${key}`;
+    }
+  }
+
+  return current;
 }
