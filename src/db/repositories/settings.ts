@@ -12,6 +12,7 @@ export const SETTINGS_KEYS = {
   PRIVACY: 'privacy',
   SYNC_OWNER_ID: 'sync_owner_id',
   LAST_RECURRING_RUN: 'last_recurring_run',
+  ONBOARDING_COMPLETED: 'onboarding_completed',
 } as const;
 
 export async function getSetting(key: string): Promise<string | null> {
