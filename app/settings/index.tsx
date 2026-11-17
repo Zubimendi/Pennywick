@@ -281,6 +281,31 @@ export default function SettingsScreen(): React.JSX.Element {
           />
         </View>
 
+        {/* Section: Developer (dev mode only) */}
+        {typeof __DEV__ !== 'undefined' && __DEV__ ? (
+          <View style={{ gap: space.sm }}>
+            <Text style={[type.label, { color: colors.textSecondary }]}>DEVELOPER</Text>
+            <Row
+              title="Load Demo Data"
+              subtitle="Creates ~3 months of realistic entries, budgets & recurring rules"
+              leading={
+                <View style={[styles.iconBox, { backgroundColor: colors.surfaceMuted, borderRadius: radius.sm }]}>
+                  <Ionicons name="flask-outline" size={18} color={colors.primary} />
+                </View>
+              }
+              onPress={async () => {
+                try {
+                  const { loadDemoData } = await import('@/dev/demoData');
+                  const res = await loadDemoData();
+                  showToast({ message: `Loaded ${res.transactionsCreated} demo entries.` });
+                } catch {
+                  showToast({ message: 'Failed to load demo data.' });
+                }
+              }}
+            />
+          </View>
+        ) : null}
+
         {/* Section: About */}
         <View style={[styles.aboutBox, { gap: space.xs }]}>
           <Text style={[type.caption, { color: colors.textSecondary }]}>
