@@ -193,3 +193,7 @@ export function getCurrentUser(): UserProfile | null {
     email: model.getString('email'),
   };
 }
+
+export function isAuthenticated(): boolean {
+  return pb.authStore.isValid && !!pb.authStore.record;
+}

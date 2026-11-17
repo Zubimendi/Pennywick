@@ -57,7 +57,7 @@ export function sanitizeMetadata(meta?: LogMetadata): LogMetadata | undefined {
 
 class ConsoleLogger implements Logger {
   debug(message: string, meta?: LogMetadata): void {
-    if (__DEV__) {
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
       const clean = sanitizeMetadata(meta);
       console.debug(`[DEBUG] ${message}`, clean ? JSON.stringify(clean) : '');
     }

@@ -92,7 +92,7 @@ export function mapError(raw: unknown): AppError {
     if (status === 404) {
       return { class: 'notFound', message: 'Not found', raw };
     }
-    if (status === 409 && code === 'stale_write') {
+    if (status === 409 || code === 'stale_write') {
       return { class: 'conflict', message: 'Stale write', raw };
     }
     if (status === 422 || status === 400) {

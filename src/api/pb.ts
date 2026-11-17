@@ -7,8 +7,8 @@ import * as SecureStore from 'expo-secure-store';
 
 const SECURE_STORE_KEY = 'pennywick_pb_auth';
 
-export const PB_URL =
-  process.env.EXPO_PUBLIC_POCKETBASE_URL || 'http://127.0.0.1:8090';
+const env = process.env as Record<string, string | undefined>;
+export const PB_URL = env['EXPO_PUBLIC_POCKETBASE_URL'] || 'http://127.0.0.1:8090';
 
 // Provide `initial` so the store restores the saved session on startup.
 export const authStore = new AsyncAuthStore({
