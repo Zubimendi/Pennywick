@@ -3,12 +3,13 @@
 // Precision Utility layout: month summary, progress bars with "N left" / "N over", status tiers (onTrack, watch, over).
 
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, ActivityIndicator } from 'react-native';
 import {
   Screen,
   Button,
   MoneyText,
   EmptyState,
+  BudgetsScreenSkeleton,
 } from '@/ui/components';
 import { useTheme } from '@/ui/theme/useTheme';
 import { useBudgetsData, EnrichedBudget } from '@/features/budgets/useBudgetsData';
@@ -73,7 +74,7 @@ export default function BudgetsScreen(): React.JSX.Element {
   // Error State
   if (error) {
     return (
-      <Screen style={styles.centerContainer}>
+      <Screen centerContent>
         <EmptyState
           title="Couldn't load budgets"
           description={error.message || 'Please try refreshing.'}
@@ -84,11 +85,18 @@ export default function BudgetsScreen(): React.JSX.Element {
     );
   }
 
-  // Loading State
+  // Loading State with skeleton and centered spinner
   if (isLoading && budgets.length === 0) {
     return (
-      <Screen style={styles.centerContainer}>
-        <Text style={[type.body, { color: colors.textSecondary }]}>Loading budgets...</Text>
+      <Screen edges={['top', 'left', 'right']}>
+        <View style={styles.loadingWrapper}>
+          <BudgetsScreenSkeleton />
+          <View style={StyleSheet.absoluteFill} pointerEvents="none">
+            <View style={styles.spinnerCenter}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          </View>
+        </View>
       </Screen>
     );
   }
@@ -286,6 +294,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingWrapper: {
+    flex: 1,
+  },
+  spinnerCenter: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',

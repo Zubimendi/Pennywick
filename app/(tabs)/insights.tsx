@@ -3,7 +3,7 @@
 // Precision Utility layout: month picker, custom SVG donut and daily bars, previous month comparison.
 
 import React from 'react';
-import { StyleSheet, Text, View, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -12,6 +12,7 @@ import {
   MoneyText,
   EmptyState,
   Press,
+  InsightsScreenSkeleton,
 } from '@/ui/components';
 import { useTheme } from '@/ui/theme/useTheme';
 import { useInsightsData } from '@/features/insights/useInsightsData';
@@ -65,7 +66,7 @@ export default function InsightsScreen(): React.JSX.Element {
 
   if (error) {
     return (
-      <Screen style={styles.centerContainer}>
+      <Screen centerContent>
         <EmptyState
           title="Couldn't load insights"
           description={error.message || 'Please try refreshing.'}
@@ -76,10 +77,18 @@ export default function InsightsScreen(): React.JSX.Element {
     );
   }
 
+  // Loading state with skeleton and centered spinner
   if (isLoading && totalExpenseMinor === 0 && categoryShares.length === 0) {
     return (
-      <Screen style={styles.centerContainer}>
-        <Text style={[type.body, { color: colors.textSecondary }]}>Loading insights...</Text>
+      <Screen edges={['top', 'left', 'right']}>
+        <View style={styles.loadingWrapper}>
+          <InsightsScreenSkeleton />
+          <View style={StyleSheet.absoluteFill} pointerEvents="none">
+            <View style={styles.spinnerCenter}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          </View>
+        </View>
       </Screen>
     );
   }
@@ -326,6 +335,14 @@ const styles = StyleSheet.create({
     height: 10,
   },
   centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingWrapper: {
+    flex: 1,
+  },
+  spinnerCenter: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',

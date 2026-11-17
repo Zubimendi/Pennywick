@@ -3,7 +3,7 @@
 // Precision Utility layout: FlashList, day groups with subtotals, search, filters, entry sheet, delete with undo.
 
 import React, { useState, useCallback } from 'react';
-import { StyleSheet, Text, View, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +13,7 @@ import {
   Chip,
   EmptyState,
   Button,
+  HistoryScreenSkeleton,
 } from '@/ui/components';
 import { useTheme } from '@/ui/theme/useTheme';
 import { useHistoryData } from '@/features/history/useHistoryData';
@@ -102,7 +103,7 @@ export default function HistoryScreen(): React.JSX.Element {
   // Error state
   if (error) {
     return (
-      <Screen style={styles.centerContainer}>
+      <Screen centerContent>
         <EmptyState
           title="Couldn't load history"
           description={error.message || 'Please try refreshing.'}
@@ -113,11 +114,18 @@ export default function HistoryScreen(): React.JSX.Element {
     );
   }
 
-  // Loading skeleton state
+  // Loading skeleton state with centered spinner
   if (isLoading && totalRawCount === 0) {
     return (
-      <Screen style={styles.centerContainer}>
-        <Text style={[type.body, { color: colors.textSecondary }]}>Loading history...</Text>
+      <Screen edges={['top', 'left', 'right']}>
+        <View style={styles.loadingWrapper}>
+          <HistoryScreenSkeleton />
+          <View style={StyleSheet.absoluteFill} pointerEvents="none">
+            <View style={styles.spinnerCenter}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          </View>
+        </View>
       </Screen>
     );
   }
@@ -278,6 +286,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingWrapper: {
+    flex: 1,
+  },
+  spinnerCenter: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',

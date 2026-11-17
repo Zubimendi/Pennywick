@@ -13,6 +13,7 @@ import { useTheme } from '../theme/useTheme';
 export interface ScreenProps {
   children: ReactNode;
   scrollable?: boolean;
+  centerContent?: boolean;
   style?: StyleProp<ViewStyle>;
   contentContainerStyle?: StyleProp<ViewStyle>;
   edges?: Edge[];
@@ -22,6 +23,7 @@ export interface ScreenProps {
 export function Screen({
   children,
   scrollable = false,
+  centerContent = false,
   style,
   contentContainerStyle,
   edges = ['top', 'left', 'right'],
@@ -37,6 +39,7 @@ export function Screen({
   const defaultContentStyle: ViewStyle = {
     paddingHorizontal: space.lg,
     paddingBottom: space.huge,
+    ...(centerContent ? { justifyContent: 'center', alignItems: 'center' } : {}),
   };
 
   return (
