@@ -24,7 +24,7 @@ export async function maybeEnqueueOutbox(
   op: 'create' | 'update' | 'delete',
   payload: Record<string, unknown>
 ): Promise<void> {
-  const signedIn = await isUserSignedIn();
+  const signedIn = await isUserSignedIn(txOrDb);
   if (!signedIn) {
     // If not signed in, outbox rows are never written per spec
     return;

@@ -4,7 +4,7 @@
 // Four states: loading, empty, populated, error.
 
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -15,6 +15,7 @@ import {
   Press,
   Row,
   SyncChip,
+  HomeScreenSkeleton,
 } from '@/ui/components';
 import { useTheme } from '@/ui/theme/useTheme';
 import { useUiStore } from '@/ui/theme/uiStore';
@@ -62,12 +63,17 @@ export default function HomeScreen(): React.JSX.Element {
     );
   }
 
-  // 2. Loading State
+  // 2. Loading State: Centered loading spinner with skeleton outline
   if (isLoading) {
     return (
-      <Screen style={styles.centerContainer}>
-        <View style={{ gap: space.md, alignItems: 'center' }}>
-          <Text style={[type.body, { color: colors.textSecondary }]}>Loading summary...</Text>
+      <Screen edges={['top', 'left', 'right']}>
+        <View style={styles.loadingWrapper}>
+          <HomeScreenSkeleton />
+          <View style={StyleSheet.absoluteFill} pointerEvents="none">
+            <View style={styles.spinnerCenter}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          </View>
         </View>
       </Screen>
     );
@@ -477,5 +483,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  loadingWrapper: {
+    flex: 1,
+  },
+  spinnerCenter: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

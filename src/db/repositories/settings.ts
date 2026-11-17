@@ -15,8 +15,9 @@ export const SETTINGS_KEYS = {
   ONBOARDING_COMPLETED: 'onboarding_completed',
 } as const;
 
-export async function getSetting(key: string): Promise<string | null> {
-  const rows = await db.select().from(settings).where(eq(settings.key, key)).limit(1);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function getSetting(key: string, database: any = db): Promise<string | null> {
+  const rows = await database.select().from(settings).where(eq(settings.key, key)).limit(1);
   return rows[0]?.value ?? null;
 }
 
@@ -41,7 +42,8 @@ export async function getAllSettings(): Promise<Record<string, string>> {
   return result;
 }
 
-export async function isUserSignedIn(): Promise<boolean> {
-  const syncOwnerId = await getSetting(SETTINGS_KEYS.SYNC_OWNER_ID);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function isUserSignedIn(database: any = db): Promise<boolean> {
+  const syncOwnerId = await getSetting(SETTINGS_KEYS.SYNC_OWNER_ID, database);
   return !!syncOwnerId && syncOwnerId.length > 0;
 }

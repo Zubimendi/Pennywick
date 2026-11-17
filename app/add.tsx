@@ -188,8 +188,7 @@ export default function AddModal(): React.JSX.Element {
         message: `${kind === 'expense' ? 'Expense' : 'Income'} of ${formatMoney(parsedMinor, currency)} logged.`,
         actionLabel: 'Add another',
         onAction: () => {
-          setAmountStr('');
-          setNote('');
+          router.push('/add');
         },
       });
 
@@ -383,7 +382,7 @@ export default function AddModal(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   screen: {
-    paddingHorizontal: 16,
+    flex: 1,
   },
   header: {
     flexDirection: 'row',

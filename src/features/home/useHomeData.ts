@@ -2,7 +2,8 @@
 // Hook to query data for the Home screen.
 // Reads from local SQLite via cached aggregates and repositories.
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { eq, isNull, desc } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { monthlyTotals, categories, transactions, budgets, Category, Transaction } from '../../db/schema';
@@ -59,10 +60,13 @@ export function useHomeData(): HomeData {
     Array<Transaction & { categoryName: string; categoryIcon: string; categoryColorKey: string }>
   >([]);
   const [isEmpty, setIsEmpty] = useState(true);
+  const isFirstLoad = useRef(true);
 
   const fetchData = useCallback(async (): Promise<void> => {
     try {
-      setIsLoading(true);
+      if (isFirstLoad.current) {
+        setIsLoading(true);
+      }
       setError(null);
 
       // 1. Get Currency Setting
@@ -183,12 +187,15 @@ export function useHomeData(): HomeData {
       setError(err instanceof Error ? err : new Error('Failed to load home data'));
     } finally {
       setIsLoading(false);
+      isFirstLoad.current = false;
     }
   }, [monthKey]);
 
-  useEffect(() => {
-    void fetchData();
-  }, [fetchData]);
+  useFocusEffect(
+    useCallback(() => {
+      void fetchData();
+    }, [fetchData])
+  );
 
   return {
     isLoading,
