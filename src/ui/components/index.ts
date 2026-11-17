@@ -7,3 +7,5 @@ export * from './Chip';
 export * from './EmptyState';
 export * from './MoneyText';
 export * from './Toast';
+export * from './Keypad';
+export * from './SegmentedControl';
