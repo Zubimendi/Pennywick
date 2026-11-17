@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { StyleSheet, View, Text } from 'react-native';
+import { StyleSheet, View, Text, AppState } from 'react-native';
 import { Toast } from '@/ui/components/Toast';
 import { Button } from '@/ui/components/Button';
 import { useTheme } from '@/ui/theme/useTheme';
 import { initDatabase } from '@/db/init';
+import { runRecurrenceCatchUp } from '@/features/recurring/recurrenceEngine';
 
 export function ErrorBoundary({
   error,
@@ -43,12 +44,23 @@ export default function RootLayout(): React.JSX.Element {
       try {
         await initDatabase();
         setIsDbReady(true);
+        void runRecurrenceCatchUp();
       } catch (err) {
         console.error('Failed to initialize database:', err);
         setInitError(err instanceof Error ? err : new Error('DB initialization error'));
       }
     }
     void prepare();
+
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        void runRecurrenceCatchUp();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   if (initError) {
