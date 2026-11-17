@@ -34,7 +34,10 @@ import { listCategories } from '@/db/repositories/categories';
 import { createTransaction } from '@/db/repositories/transactions';
 import { getSetting, setSetting, SETTINGS_KEYS } from '@/db/repositories/settings';
 import { DEFAULT_CURRENCY } from '@/data/currencies';
-import { Category } from '@/db/schema';
+import { findFrequentEntries, FrequentEntrySuggestion } from '@/domain/quickEntry';
+import { db } from '@/db/client';
+import { transactions, Category } from '@/db/schema';
+import { eq, and, isNull } from 'drizzle-orm';
 
 const LAST_KIND_KEY = 'last_selected_kind';
 const LARGE_AMOUNT_THRESHOLD_MINOR = 1000000000; // 10,000,000 major units
@@ -52,6 +55,47 @@ export default function AddModal(): React.JSX.Element {
   const [occurredOn, setOccurredOn] = useState(() => getToday());
   const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [frequentSuggestions, setFrequentSuggestions] = useState<FrequentEntrySuggestion[]>([]);
+
+  // Load frequent entries when selected category changes
+  useEffect(() => {
+    if (!selectedCategoryId) {
+      setFrequentSuggestions([]);
+      return;
+    }
+    const catId = selectedCategoryId;
+    async function loadFrequent(): Promise<void> {
+      try {
+        const recent = await db
+          .select({
+            categoryId: transactions.categoryId,
+            amountMinor: transactions.amountMinor,
+            note: transactions.note,
+          })
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.categoryId, catId),
+              isNull(transactions.deletedAt)
+            )
+          )
+          .limit(100);
+
+        const suggestions = findFrequentEntries(recent, catId, currency, 3);
+        setFrequentSuggestions(suggestions);
+      } catch (e) {
+        console.error('Failed to load frequent suggestions:', e);
+      }
+    }
+    void loadFrequent();
+  }, [selectedCategoryId, currency]);
+
+  const handleSelectFrequent = (item: FrequentEntrySuggestion): void => {
+    const major = (item.amountMinor / 100).toFixed(2);
+    setAmountStr(major.endsWith('.00') ? major.slice(0, -3) : major);
+    setNote(item.note);
+    void Haptics.selectionAsync();
+  };
 
   // Load user currency & last remembered kind
   useEffect(() => {
@@ -269,6 +313,27 @@ export default function AddModal(): React.JSX.Element {
             })}
           </ScrollView>
         </View>
+
+        {/* Frequent-entry chips */}
+        {frequentSuggestions.length > 0 && (
+          <View style={{ gap: space.xs }}>
+            <Text style={[type.caption, { color: colors.textSecondary }]}>Frequent</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ flexDirection: 'row', gap: space.sm }}
+            >
+              {frequentSuggestions.map((s) => (
+                <Chip
+                  key={s.id}
+                  label={s.label}
+                  leading={<Ionicons name="flash-outline" size={14} color={colors.primary} />}
+                  onPress={() => handleSelectFrequent(s)}
+                />
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {/* Date chips (Today, Yesterday) */}
         <View style={{ gap: space.xs }}>
