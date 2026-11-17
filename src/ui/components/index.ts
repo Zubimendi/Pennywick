@@ -11,3 +11,4 @@ export * from './Keypad';
 export * from './SegmentedControl';
 export * from './SyncChip';
 export * from './Skeleton';
+export * from './AppLockOverlay';

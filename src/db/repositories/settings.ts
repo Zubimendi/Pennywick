@@ -13,6 +13,8 @@ export const SETTINGS_KEYS = {
   SYNC_OWNER_ID: 'sync_owner_id',
   LAST_RECURRING_RUN: 'last_recurring_run',
   ONBOARDING_COMPLETED: 'onboarding_completed',
+  APP_LOCK: 'app_lock',
+  APP_LOCK_PIN: 'app_lock_pin',
 } as const;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

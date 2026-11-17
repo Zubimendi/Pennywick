@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { StyleSheet, View, Text, AppState } from 'react-native';
+import { StyleSheet, View, Text, AppState, AppStateStatus } from 'react-native';
 import { Toast } from '@/ui/components/Toast';
 import { Button } from '@/ui/components/Button';
+import { AppLockOverlay } from '@/ui/components/AppLockOverlay';
 import { useTheme } from '@/ui/theme/useTheme';
 import { initDatabase } from '@/db/init';
+import { getSetting, SETTINGS_KEYS } from '@/db/repositories/settings';
 import { runRecurrenceCatchUp } from '@/features/recurring/recurrenceEngine';
 import { syncEngine } from '@/sync/engine';
 
@@ -39,6 +41,9 @@ export default function RootLayout(): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const [isDbReady, setIsDbReady] = useState(false);
   const [initError, setInitError] = useState<Error | null>(null);
+  const [isLocked, setIsLocked] = useState(false);
+  const [savedPin, setSavedPin] = useState<string | null>(null);
+  const backgroundTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
     async function prepare(): Promise<void> {
@@ -54,9 +59,29 @@ export default function RootLayout(): React.JSX.Element {
     }
     void prepare();
 
-    const subscription = AppState.addEventListener('change', (nextState) => {
-      if (nextState === 'active') {
+    const subscription = AppState.addEventListener('change', async (nextState: AppStateStatus) => {
+      if (nextState === 'background' || nextState === 'inactive') {
+        backgroundTimeRef.current = Date.now();
+      } else if (nextState === 'active') {
         void runRecurrenceCatchUp();
+
+        // Check if App Lock is enabled and 60 seconds have elapsed
+        if (backgroundTimeRef.current) {
+          const elapsedMs = Date.now() - backgroundTimeRef.current;
+          if (elapsedMs >= 60000) {
+            try {
+              const lockEnabled = await getSetting(SETTINGS_KEYS.APP_LOCK);
+              if (lockEnabled === 'true') {
+                const pin = await getSetting(SETTINGS_KEYS.APP_LOCK_PIN);
+                setSavedPin(pin);
+                setIsLocked(true);
+              }
+            } catch (e) {
+              console.error('Failed to check app lock setting:', e);
+            }
+          }
+        }
+        backgroundTimeRef.current = null;
       }
     });
 
@@ -104,6 +129,12 @@ export default function RootLayout(): React.JSX.Element {
           <View style={[styles.root, { backgroundColor: colors.bg }]} />
         )}
         <Toast />
+        {isLocked && (
+          <AppLockOverlay
+            onUnlock={() => setIsLocked(false)}
+            savedPin={savedPin}
+          />
+        )}
       </View>
     </GestureHandlerRootView>
   );

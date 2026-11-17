@@ -65,6 +65,7 @@ export default function SettingsScreen(): React.JSX.Element {
   const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
   const [currencyModalOpen, setCurrencyModalOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [appLockEnabled, setAppLockEnabled] = useState(false);
 
   const loadSettings = useCallback(async (): Promise<void> => {
     const savedCurrency = await getSetting(SETTINGS_KEYS.CURRENCY);
@@ -78,6 +79,11 @@ export default function SettingsScreen(): React.JSX.Element {
     const savedPrivacy = await getSetting(SETTINGS_KEYS.PRIVACY);
     if (savedPrivacy !== null) {
       setPrivacyEnabled(savedPrivacy === 'true');
+    }
+
+    const savedAppLock = await getSetting(SETTINGS_KEYS.APP_LOCK);
+    if (savedAppLock !== null) {
+      setAppLockEnabled(savedAppLock === 'true');
     }
   }, [setThemeMode, setPrivacyEnabled]);
 
@@ -138,6 +144,15 @@ export default function SettingsScreen(): React.JSX.Element {
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const handleToggleAppLock = async (): Promise<void> => {
+    const nextVal = !appLockEnabled;
+    setAppLockEnabled(nextVal);
+    await setSetting(SETTINGS_KEYS.APP_LOCK, String(nextVal));
+    showToast({
+      message: nextVal ? 'App lock enabled (locks after 60s in background)' : 'App lock disabled',
+    });
   };
 
   const currentCurrencyObj =
@@ -212,6 +227,19 @@ export default function SettingsScreen(): React.JSX.Element {
               />
             }
             onPress={() => void handleTogglePrivacy()}
+          />
+
+          <Row
+            title="App Lock"
+            subtitle="Lock app after 60 seconds in background"
+            trailing={
+              <Ionicons
+                name={appLockEnabled ? 'checkbox' : 'square-outline'}
+                size={22}
+                color={colors.primary}
+              />
+            }
+            onPress={() => void handleToggleAppLock()}
           />
         </View>
 
