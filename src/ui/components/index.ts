@@ -9,3 +9,4 @@ export * from './MoneyText';
 export * from './Toast';
 export * from './Keypad';
 export * from './SegmentedControl';
+export * from './SyncChip';

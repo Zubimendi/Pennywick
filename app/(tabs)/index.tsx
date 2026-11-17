@@ -14,17 +14,24 @@ import {
   EmptyState,
   Press,
   Row,
+  SyncChip,
 } from '@/ui/components';
 import { useTheme } from '@/ui/theme/useTheme';
 import { useUiStore } from '@/ui/theme/uiStore';
 import { useHomeData } from '@/features/home/useHomeData';
 import { formatMonthLabel } from '@/domain/dates';
+import { syncEngine, type SyncEngineState } from '@/sync/engine';
 
 export default function HomeScreen(): React.JSX.Element {
   const router = useRouter();
   const { colors, space, type, hit } = useTheme();
   const privacyEnabled = useUiStore((state) => state.privacyEnabled);
   const togglePrivacy = useUiStore((state) => state.togglePrivacy);
+  const [syncState, setSyncState] = React.useState<SyncEngineState>(syncEngine.getState());
+
+  React.useEffect(() => {
+    return syncEngine.subscribe(setSyncState);
+  }, []);
 
   const {
     isLoading,
@@ -75,7 +82,12 @@ export default function HomeScreen(): React.JSX.Element {
           <Text style={[type.title, { color: colors.text }]}>
             {formatMonthLabel(monthKey)}
           </Text>
-          <View style={[styles.headerIcons, { gap: space.sm }]}>
+          <View style={[styles.headerIcons, { gap: space.sm, alignItems: 'center' }]}>
+            <SyncChip
+              status={syncState.status}
+              pendingCount={syncState.pendingCount}
+              onPress={() => router.push('/settings/sync')}
+            />
             <Press
               onPress={togglePrivacy}
               hitSlop={space.sm}
@@ -124,7 +136,12 @@ export default function HomeScreen(): React.JSX.Element {
         <Text style={[type.title, { color: colors.text }]}>
           {formatMonthLabel(monthKey)}
         </Text>
-        <View style={[styles.headerIcons, { gap: space.sm }]}>
+        <View style={[styles.headerIcons, { gap: space.sm, alignItems: 'center' }]}>
+          <SyncChip
+            status={syncState.status}
+            pendingCount={syncState.pendingCount}
+            onPress={() => router.push('/settings/sync')}
+          />
           <Press
             onPress={togglePrivacy}
             hitSlop={space.sm}

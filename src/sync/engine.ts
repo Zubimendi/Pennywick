@@ -5,7 +5,7 @@ import { AppState, type AppStateStatus } from 'react-native';
 import NetInfo, { type NetInfoState } from '@react-native-community/netinfo';
 import { drainOutbox } from './push';
 import { pullChanges } from './pull';
-import { getAllPendingCount, getParkedCount } from '../db/repositories/outbox';
+import { getAllPendingCount, getParkedCount, setSyncNotifier } from '../db/repositories/outbox';
 import { deriveSyncStatus, type SyncStatusType } from './status';
 import { isAuthenticated, refreshAuth } from '../api/auth';
 import { logger } from '../lib/logger';
@@ -193,6 +193,11 @@ class SyncEngine {
 }
 
 export const syncEngine = new SyncEngine();
+
+// Connect repository writes to debounced engine sync
+setSyncNotifier(() => {
+  syncEngine.requestSync();
+});
 
 /** Convenience helper for repositories to request sync without full engine import. */
 export function requestSync(): void {

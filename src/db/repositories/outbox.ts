@@ -8,6 +8,13 @@ import { outbox, OutboxItem, NewOutboxItem } from '../schema';
 import { isUserSignedIn } from './settings';
 import { now } from '../../lib/clock';
 
+type SyncNotifier = () => void;
+let syncNotifier: SyncNotifier | null = null;
+
+export function setSyncNotifier(fn: SyncNotifier | null): void {
+  syncNotifier = fn;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function maybeEnqueueOutbox(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,6 +44,9 @@ export async function maybeEnqueueOutbox(
   };
 
   await txOrDb.insert(outbox).values(item);
+
+  // Debounced push request to sync engine
+  syncNotifier?.();
 }
 
 export async function listPendingOutbox(): Promise<OutboxItem[]> {
@@ -121,6 +131,30 @@ export async function getParkedCount(): Promise<number> {
     .from(outbox)
     .where(eq(outbox.status, 'parked'));
   return Number(rows[0]?.count ?? 0);
+}
+
+export async function getParkedOps(): Promise<OutboxItem[]> {
+  return db
+    .select()
+    .from(outbox)
+    .where(eq(outbox.status, 'parked'))
+    .orderBy(asc(outbox.seq));
+}
+
+export async function retryOp(seq: number): Promise<void> {
+  await db
+    .update(outbox)
+    .set({
+      status: 'pending',
+      attempts: 0,
+      nextAttemptAt: 0,
+      lastError: null,
+    })
+    .where(eq(outbox.seq, seq));
+}
+
+export async function discardOp(seq: number): Promise<void> {
+  await db.delete(outbox).where(eq(outbox.seq, seq));
 }
 
 export async function deleteOutboxItem(seq: number): Promise<void> {

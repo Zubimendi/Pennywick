@@ -8,6 +8,7 @@ import { Button } from '@/ui/components/Button';
 import { useTheme } from '@/ui/theme/useTheme';
 import { initDatabase } from '@/db/init';
 import { runRecurrenceCatchUp } from '@/features/recurring/recurrenceEngine';
+import { syncEngine } from '@/sync/engine';
 
 export function ErrorBoundary({
   error,
@@ -45,6 +46,7 @@ export default function RootLayout(): React.JSX.Element {
         await initDatabase();
         setIsDbReady(true);
         void runRecurrenceCatchUp();
+        void syncEngine.start();
       } catch (err) {
         console.error('Failed to initialize database:', err);
         setInitError(err instanceof Error ? err : new Error('DB initialization error'));
@@ -60,6 +62,7 @@ export default function RootLayout(): React.JSX.Element {
 
     return () => {
       subscription.remove();
+      syncEngine.stop();
     };
   }, []);
 
