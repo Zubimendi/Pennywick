@@ -120,6 +120,46 @@ export async function archiveCategory(id: string): Promise<Result<void>> {
   });
 }
 
+export async function unarchiveCategory(id: string): Promise<Result<void>> {
+  return tryCatch(async () => {
+    const timestamp = now();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await db.transaction(async (tx: any) => {
+      await tx
+        .update(categories)
+        .set({
+          archived: false,
+          updatedAt: timestamp,
+        })
+        .where(eq(categories.id, id));
+      await maybeEnqueueOutbox(tx, 'category', id, 'update', {
+        id,
+        archived: false,
+      });
+    });
+  });
+}
+
+export async function reorderCategories(orderedIds: string[]): Promise<Result<void>> {
+  return tryCatch(async () => {
+    const timestamp = now();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await db.transaction(async (tx: any) => {
+      for (let i = 0; i < orderedIds.length; i++) {
+        const id = orderedIds[i];
+        await tx
+          .update(categories)
+          .set({ sortOrder: i, updatedAt: timestamp })
+          .where(eq(categories.id, id));
+        await maybeEnqueueOutbox(tx, 'category', id, 'update', {
+          id,
+          sort_order: i,
+        });
+      }
+    });
+  });
+}
+
 export async function deleteCategory(id: string): Promise<Result<void>> {
   // Check if any transactions (including soft-deleted) reference this category
   const usedCount = await db
