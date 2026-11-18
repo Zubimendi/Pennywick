@@ -49,7 +49,7 @@ export function ErrorBoundary({
 }
 
 export default function BudgetsScreen(): React.JSX.Element {
-  const { colors, space } = useTheme();
+  const { colors, space, isDark } = useTheme();
 
   const {
     isLoading,
@@ -181,8 +181,10 @@ export default function BudgetsScreen(): React.JSX.Element {
       {budgets.length > 0 && (
         <View style={{ marginTop: space.lg }}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Category Budgets</Text>
-            <Text style={[styles.categoryCountBadge, { color: colors.textSecondary }]}>
+            <Text style={[styles.sectionTitle, { color: isDark ? '#FFFFFF' : colors.text }]}>
+              Category Budgets
+            </Text>
+            <Text style={[styles.categoryCountBadge, { color: isDark ? '#94A3B8' : colors.textSecondary }]}>
               {budgets.length} active
             </Text>
           </View>
@@ -212,7 +214,7 @@ export default function BudgetsScreen(): React.JSX.Element {
 
       {/* Grouped Category Breakdown Table (Dribbble Screen 1 Bottom) */}
       <View style={{ marginTop: space.lg }}>
-        <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>
+        <Text style={[styles.sectionTitle, { color: isDark ? '#FFFFFF' : colors.text, marginBottom: 12 }]}>
           Category Breakdown
         </Text>
 
@@ -244,13 +246,22 @@ export default function BudgetsScreen(): React.JSX.Element {
                 { borderBottomColor: colors.hairline, borderBottomWidth: 1 },
               ]}
             >
-              <Text style={[styles.tableColHeader, { flex: 2, color: colors.textSecondary }]}>
+              <Text
+                style={[
+                  styles.tableColHeader,
+                  { flex: 2, color: isDark ? '#94A3B8' : colors.textSecondary },
+                ]}
+              >
                 CATEGORY
               </Text>
               <Text
                 style={[
                   styles.tableColHeader,
-                  { flex: 1.2, textAlign: 'right', color: colors.textSecondary },
+                  {
+                    flex: 1.2,
+                    textAlign: 'right',
+                    color: isDark ? '#94A3B8' : colors.textSecondary,
+                  },
                 ]}
               >
                 BUDGETED
@@ -258,7 +269,11 @@ export default function BudgetsScreen(): React.JSX.Element {
               <Text
                 style={[
                   styles.tableColHeader,
-                  { flex: 1.2, textAlign: 'right', color: colors.textSecondary },
+                  {
+                    flex: 1.2,
+                    textAlign: 'right',
+                    color: isDark ? '#94A3B8' : colors.textSecondary,
+                  },
                 ]}
               >
                 AVAILABLE
@@ -298,10 +313,21 @@ export default function BudgetsScreen(): React.JSX.Element {
                       />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.tableCatName, { color: colors.text }]} numberOfLines={1}>
+                      <Text
+                        style={[
+                          styles.tableCatName,
+                          { color: isDark ? '#FFFFFF' : colors.text },
+                        ]}
+                        numberOfLines={1}
+                      >
                         {b.categoryName}
                       </Text>
-                      <Text style={[styles.tableCatSub, { color: colors.textSecondary }]}>
+                      <Text
+                        style={[
+                          styles.tableCatSub,
+                          { color: isDark ? '#94A3B8' : colors.textSecondary },
+                        ]}
+                      >
                         {Math.round(b.percentageUsed * 100)}% used
                       </Text>
                     </View>
@@ -313,7 +339,10 @@ export default function BudgetsScreen(): React.JSX.Element {
                       amountMinor={b.limitMinor}
                       currency={currency}
                       role="body"
-                      style={styles.tableAmountText}
+                      style={[
+                        styles.tableAmountText,
+                        { color: isDark ? '#FFFFFF' : colors.text },
+                      ]}
                     />
                   </View>
 
@@ -327,7 +356,13 @@ export default function BudgetsScreen(): React.JSX.Element {
                       role="body"
                       style={[
                         styles.tableAmountText,
-                        { color: isOver ? colors.danger : colors.primary },
+                        {
+                          color: isOver
+                            ? colors.danger
+                            : isDark
+                              ? '#34D399'
+                              : colors.primary,
+                        },
                       ]}
                     />
                   </View>

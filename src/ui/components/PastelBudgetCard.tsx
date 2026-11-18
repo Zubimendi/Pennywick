@@ -67,8 +67,24 @@ export function PastelBudgetCard({
         </View>
 
         {amountLabel ? (
-          <View style={[styles.labelPill, { backgroundColor: 'rgba(255, 255, 255, 0.6)' }]}>
-            <Text style={[styles.labelText, { color: theme.accent }]}>{amountLabel}</Text>
+          <View
+            style={[
+              styles.labelPill,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(255, 255, 255, 0.14)'
+                  : 'rgba(255, 255, 255, 0.6)',
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.labelText,
+                { color: isDark ? '#FFFFFF' : theme.accent },
+              ]}
+            >
+              {amountLabel}
+            </Text>
           </View>
         ) : null}
       </View>
@@ -79,18 +95,30 @@ export function PastelBudgetCard({
           amountMinor={amountMinor}
           currency={currency}
           role="figure"
-          style={styles.amountText}
+          style={[styles.amountText, { color: isDark ? '#FFFFFF' : '#0F172A' }]}
         />
       </View>
 
       {/* Category Name */}
-      <Text style={[styles.categoryName, { color: isDark ? '#E2E8F0' : '#334155' }]} numberOfLines={1}>
+      <Text
+        style={[styles.categoryName, { color: isDark ? '#FFFFFF' : '#334155' }]}
+        numberOfLines={1}
+      >
         {categoryName}
       </Text>
 
       {/* Micro Progress Bar */}
       {progressPercent !== undefined ? (
-        <View style={styles.progressBarTrack}>
+        <View
+          style={[
+            styles.progressBarTrack,
+            {
+              backgroundColor: isDark
+                ? 'rgba(255, 255, 255, 0.12)'
+                : 'rgba(0, 0, 0, 0.06)',
+            },
+          ]}
+        >
           <View
             style={[
               styles.progressBarFill,

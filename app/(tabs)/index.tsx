@@ -168,11 +168,13 @@ export default function HomeScreen(): React.JSX.Element {
         {renderHeader()}
 
         {/* Timeframe pill control */}
-        <View style={{ marginVertical: space.xs }}>
+        <View style={{ marginVertical: space.xs, alignItems: 'center' }}>
           <SegmentedControl
             variant="pill"
+            size="sm"
             value={timeframe}
             onChange={setTimeframe}
+            containerStyle={styles.timeframeControl}
             options={[
               { value: 'day', label: 'Day' },
               { value: 'month', label: 'Month' },
@@ -228,11 +230,13 @@ export default function HomeScreen(): React.JSX.Element {
       {renderHeader()}
 
       {/* Timeframe pill control (Dribbble Screen 3) */}
-      <View style={{ marginVertical: space.xs }}>
+      <View style={{ marginVertical: space.xs, alignItems: 'center' }}>
         <SegmentedControl
           variant="pill"
+          size="sm"
           value={timeframe}
           onChange={setTimeframe}
+          containerStyle={styles.timeframeControl}
           options={[
             { value: 'day', label: 'Day' },
             { value: 'month', label: 'Month' },
@@ -300,7 +304,7 @@ export default function HomeScreen(): React.JSX.Element {
       {/* "Your Budgets" Section with Pastel Cards (Dribbble Screen 3) */}
       <View style={{ marginTop: space.lg }}>
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Budgets</Text>
+          <Text style={[styles.sectionTitle, { color: isDark ? '#FFFFFF' : colors.text }]}>Your Budgets</Text>
           <Press
             onPress={() => router.push('/(tabs)/budgets')}
             accessibilityRole="button"
@@ -363,7 +367,7 @@ export default function HomeScreen(): React.JSX.Element {
       {/* "Recent Transactions" Section (Dribbble clean list) */}
       <View style={{ marginTop: space.lg }}>
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Transactions</Text>
+          <Text style={[styles.sectionTitle, { color: isDark ? '#FFFFFF' : colors.text }]}>Recent Transactions</Text>
           <Press
             onPress={() => router.push('/(tabs)/history')}
             accessibilityRole="button"
@@ -530,6 +534,10 @@ const styles = StyleSheet.create({
   },
   horizontalCardScroll: {
     paddingVertical: 4,
+  },
+  timeframeControl: {
+    width: 210,
+    alignSelf: 'center',
   },
   emptyBudgetsCard: {
     padding: 16,
