@@ -4,13 +4,14 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { eq, isNull, desc } from 'drizzle-orm';
+import { eq, and, isNull, desc } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { monthlyTotals, categories, transactions, budgets, Category, Transaction } from '../../db/schema';
 import { getSetting, SETTINGS_KEYS } from '../../db/repositories/settings';
 import { toMonthKey, getToday } from '../../domain/dates';
 import { DEFAULT_CURRENCY } from '../../data/currencies';
 import { computeBudgetStatus, BudgetStatus } from '../../db/repositories/budgets';
+import { SplinePoint } from '../../ui/charts/CurvedSplineChart';
 
 export interface TopCategoryItem {
   id: string;
@@ -44,6 +45,7 @@ export interface HomeData {
   topCategories: TopCategoryItem[];
   urgentBudgets: HomeBudgetItem[];
   recentEntries: Array<Transaction & { categoryName: string; categoryIcon: string; categoryColorKey: string }>;
+  trendPoints: SplinePoint[];
   refetch: () => Promise<void>;
 }
 
@@ -56,6 +58,7 @@ export function useHomeData(): HomeData {
   const [incomeThisMonthMinor, setIncomeThisMonthMinor] = useState(0);
   const [topCategories, setTopCategories] = useState<TopCategoryItem[]>([]);
   const [urgentBudgets, setUrgentBudgets] = useState<HomeBudgetItem[]>([]);
+  const [trendPoints, setTrendPoints] = useState<SplinePoint[]>([]);
   const [recentEntries, setRecentEntries] = useState<
     Array<Transaction & { categoryName: string; categoryIcon: string; categoryColorKey: string }>
   >([]);
@@ -174,6 +177,49 @@ export function useHomeData(): HomeData {
       });
       setRecentEntries(recentWithCategory);
 
+      // 7. Compute trend points for the month (W1, W2, W3, W4, W5)
+      const monthTx = await db
+        .select({
+          amountMinor: transactions.amountMinor,
+          occurredOn: transactions.occurredOn,
+        })
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.monthKey, monthKey),
+            eq(transactions.kind, 'expense'),
+            isNull(transactions.deletedAt)
+          )
+        );
+
+      const daySpendMap = new Map<number, number>();
+      for (const tx of monthTx) {
+        const dayNum = parseInt(tx.occurredOn.slice(8, 10), 10);
+        daySpendMap.set(dayNum, (daySpendMap.get(dayNum) ?? 0) + tx.amountMinor);
+      }
+
+      const milestones = [
+        { label: 'W1', endDay: 7 },
+        { label: 'W2', endDay: 14 },
+        { label: 'W3', endDay: 21 },
+        { label: 'W4', endDay: 28 },
+        { label: 'W5', endDay: 31 },
+      ];
+
+      let runningTotal = 0;
+      let curDay = 1;
+      const points: SplinePoint[] = [];
+
+      for (const m of milestones) {
+        while (curDay <= m.endDay) {
+          runningTotal += daySpendMap.get(curDay) ?? 0;
+          curDay++;
+        }
+        points.push({ xLabel: m.label, value: runningTotal });
+      }
+
+      setTrendPoints(points);
+
       // Check if there are zero non-deleted transactions across the app
       const totalCount = await db
         .select()
@@ -209,6 +255,7 @@ export function useHomeData(): HomeData {
     topCategories,
     urgentBudgets,
     recentEntries,
+    trendPoints,
     refetch: fetchData,
   };
 }

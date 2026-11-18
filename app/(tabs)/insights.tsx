@@ -1,9 +1,10 @@
 // app/(tabs)/insights.tsx
-// Insights Screen (S6, T11)
-// Precision Utility layout: month picker, custom SVG donut and daily bars, previous month comparison.
+// Insights Screen (S6, T11) - Neo-Fintech Cost Management UI (inspired by modern Dribbble design).
+// Features: Month traversal pill, Hero Spending with percentage delta pill, Smooth Spline Wave & Daily Activity charts,
+// and Donut chart with pastel category indicators.
 
-import React from 'react';
-import { StyleSheet, Text, View, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -13,11 +14,13 @@ import {
   EmptyState,
   Press,
   InsightsScreenSkeleton,
+  SegmentedControl,
 } from '@/ui/components';
 import { useTheme } from '@/ui/theme/useTheme';
 import { useInsightsData } from '@/features/insights/useInsightsData';
 import { DonutChart } from '@/ui/charts/DonutChart';
 import { DailyBarChart } from '@/ui/charts/DailyBarChart';
+import { CurvedSplineChart, SplinePoint } from '@/ui/charts/CurvedSplineChart';
 import { formatMonthLabel } from '@/domain/dates';
 
 export function ErrorBoundary({
@@ -47,7 +50,8 @@ export function ErrorBoundary({
 
 export default function InsightsScreen(): React.JSX.Element {
   const router = useRouter();
-  const { colors, space, radius, type, hit } = useTheme();
+  const { colors, space, type, isDark } = useTheme();
+  const [chartMode, setChartMode] = useState<'wave' | 'bars'>('wave');
 
   const {
     isLoading,
@@ -95,235 +99,331 @@ export default function InsightsScreen(): React.JSX.Element {
 
   const monthLabel = formatMonthLabel(monthKey);
 
+  // Convert daily bars into spline milestone points
+  const splineData: SplinePoint[] = [
+    {
+      xLabel: 'W1',
+      value: dailyBars.slice(0, 7).reduce((acc, b) => acc + b.totalMinor, 0),
+    },
+    {
+      xLabel: 'W2',
+      value: dailyBars.slice(7, 14).reduce((acc, b) => acc + b.totalMinor, 0),
+    },
+    {
+      xLabel: 'W3',
+      value: dailyBars.slice(14, 21).reduce((acc, b) => acc + b.totalMinor, 0),
+    },
+    {
+      xLabel: 'W4',
+      value: dailyBars.slice(21, 28).reduce((acc, b) => acc + b.totalMinor, 0),
+    },
+    {
+      xLabel: 'W5',
+      value: dailyBars.slice(28).reduce((acc, b) => acc + b.totalMinor, 0),
+    },
+  ];
+
   return (
-    <Screen style={styles.container}>
-      {/* Month Navigation Header */}
-      <View
-        style={[
-          styles.monthHeader,
-          {
-            paddingHorizontal: space.lg,
-            paddingVertical: space.md,
-            borderBottomColor: colors.hairline,
-            borderBottomWidth: 1,
-          },
-        ]}
-      >
+    <Screen scrollable>
+      {/* Month Navigation Header Bar */}
+      <View style={[styles.monthHeader, { paddingVertical: space.sm }]}>
         <Press
           onPress={goToPreviousMonth}
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel="Previous month"
-          style={[styles.arrowButton, { minHeight: hit.min, minWidth: hit.min }]}
+          style={[styles.arrowButton, { backgroundColor: colors.surfaceMuted }]}
         >
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
+          <Ionicons name="chevron-back" size={20} color={colors.text} />
         </Press>
 
-        <Text style={[type.heading, { color: colors.text }]}>{monthLabel}</Text>
+        <View style={[styles.monthPill, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Ionicons name="calendar-outline" size={15} color={colors.primary} style={{ marginRight: 6 }} />
+          <Text style={[styles.monthPillText, { color: colors.text }]}>{monthLabel}</Text>
+        </View>
 
         <Press
           onPress={goToNextMonth}
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel="Next month"
-          style={[styles.arrowButton, { minHeight: hit.min, minWidth: hit.min }]}
+          style={[styles.arrowButton, { backgroundColor: colors.surfaceMuted }]}
         >
-          <Ionicons name="chevron-forward" size={24} color={colors.text} />
+          <Ionicons name="chevron-forward" size={20} color={colors.text} />
         </Press>
       </View>
 
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[styles.content, { padding: space.lg, gap: space.xl }]}
+      {/* Hero Spending Summary Card */}
+      <View
+        style={[
+          styles.heroCard,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            marginTop: space.xs,
+          },
+        ]}
       >
-        {/* Hero Spending & Comparison Card */}
-        <View
-          style={[
-            styles.heroCard,
-            {
-              backgroundColor: colors.surface,
-              borderRadius: radius.md,
-              padding: space.lg,
-              gap: space.sm,
-              borderWidth: 1,
-              borderColor: colors.hairline,
-            },
-          ]}
-        >
-          <Text style={[type.caption, { color: colors.textSecondary }]}>
-            Total Spent in {monthLabel}
-          </Text>
-          <MoneyText
-            amountMinor={totalExpenseMinor}
-            currency={currency}
-            role="hero"
-          />
+        <Text style={[styles.heroCardLabel, { color: colors.textSecondary }]}>
+          TOTAL SPENT IN {monthLabel.toUpperCase()}
+        </Text>
 
-          {/* Comparison Delta */}
-          <View style={styles.comparisonRow}>
-            {comparison.percentageChange > 0 && (
-              <Ionicons
-                name={comparison.isIncrease ? 'trending-up' : 'trending-down'}
-                size={16}
-                color={comparison.isIncrease ? colors.danger : colors.primary}
-              />
-            )}
+        <MoneyText
+          amountMinor={totalExpenseMinor}
+          currency={currency}
+          role="hero"
+          style={styles.heroAmountText}
+        />
+
+        {/* Delta Comparison Pill */}
+        {comparison.percentageChange > 0 ? (
+          <View
+            style={[
+              styles.comparisonPill,
+              {
+                backgroundColor: comparison.isIncrease
+                  ? isDark
+                    ? 'rgba(239, 68, 68, 0.2)'
+                    : '#FEE2E2'
+                  : isDark
+                    ? 'rgba(16, 185, 129, 0.2)'
+                    : '#DCFCE7',
+              },
+            ]}
+          >
+            <Ionicons
+              name={comparison.isIncrease ? 'trending-up' : 'trending-down'}
+              size={14}
+              color={comparison.isIncrease ? colors.danger : colors.primary}
+            />
             <Text
               style={[
-                type.caption,
+                styles.comparisonText,
                 {
-                  color:
-                    comparison.percentageChange > 0
-                      ? comparison.isIncrease
-                        ? colors.danger
-                        : colors.primary
-                      : colors.textSecondary,
-                  fontWeight: '600',
+                  color: comparison.isIncrease ? colors.danger : colors.primary,
                 },
               ]}
             >
               {comparison.label}
             </Text>
           </View>
-        </View>
+        ) : (
+          <Text style={[type.caption, { color: colors.textSecondary, marginTop: 4 }]}>
+            {comparison.label}
+          </Text>
+        )}
+      </View>
 
-        {/* Empty Month Handling */}
-        {totalExpenseMinor === 0 ? (
+      {/* Empty Month Handling */}
+      {totalExpenseMinor === 0 ? (
+        <View style={{ marginTop: space.xl, paddingBottom: space.xl }}>
           <EmptyState
-            title={`No spending recorded in ${monthLabel}`}
-            description="Log expenses to see distribution and daily activity."
+            title={`No spending in ${monthLabel}`}
+            description="Log expenses for this month to see trends, charts, and category breakdown."
             actionLabel="Add Entry"
             onAction={() => router.push('/add')}
           />
-        ) : (
-          <>
-            {/* Daily Spending Bar Chart */}
-            <View
-              style={[
-                styles.chartSection,
-                {
-                  backgroundColor: colors.surface,
-                  borderRadius: radius.md,
-                  padding: space.lg,
-                  gap: space.md,
-                  borderWidth: 1,
-                  borderColor: colors.hairline,
-                },
-              ]}
-            >
-              <Text style={[type.label, { color: colors.textSecondary }]}>
-                Daily Spending Activity
-              </Text>
+        </View>
+      ) : (
+        <>
+          {/* Spending Activity Section (Wave vs Daily Bar Toggle) */}
+          <View
+            style={[
+              styles.chartCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                marginTop: space.lg,
+              },
+            ]}
+          >
+            <View style={styles.chartHeaderRow}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Spending Trajectory</Text>
+              <View style={{ width: 130 }}>
+                <SegmentedControl
+                  variant="pill"
+                  value={chartMode}
+                  onChange={setChartMode}
+                  options={[
+                    { value: 'wave', label: 'Curve' },
+                    { value: 'bars', label: 'Daily' },
+                  ]}
+                />
+              </View>
+            </View>
+
+            {chartMode === 'wave' ? (
+              <CurvedSplineChart
+                data={splineData}
+                currency={currency}
+                height={140}
+                width={330}
+                lineColor={isDark ? '#60A5FA' : '#4F46E5'}
+              />
+            ) : (
               <DailyBarChart
                 bars={dailyBars}
                 maxDailyMinor={maxDailyMinor}
                 currency={currency}
                 height={130}
               />
-            </View>
+            )}
+          </View>
 
-            {/* Category Breakdown & Donut Chart */}
-            <View
-              style={[
-                styles.chartSection,
-                {
-                  backgroundColor: colors.surface,
-                  borderRadius: radius.md,
-                  padding: space.lg,
-                  gap: space.lg,
-                  borderWidth: 1,
-                  borderColor: colors.hairline,
-                },
-              ]}
-            >
-              <Text style={[type.label, { color: colors.textSecondary }]}>
-                Spending by Category
-              </Text>
+          {/* Category Breakdown & Donut Chart */}
+          <View
+            style={[
+              styles.chartCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                marginTop: space.lg,
+                marginBottom: space.xl,
+              },
+            ]}
+          >
+            <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>
+              Spending by Category
+            </Text>
 
-              {/* Custom SVG Donut */}
-              <DonutChart
-                slices={categoryShares}
-                totalMinor={totalExpenseMinor}
-                currency={currency}
-                size={190}
-                strokeWidth={22}
-              />
+            {/* Custom SVG Donut */}
+            <DonutChart
+              slices={categoryShares}
+              totalMinor={totalExpenseMinor}
+              currency={currency}
+            />
 
-              {/* Category Breakdown Table */}
-              <View style={{ gap: space.sm }}>
-                {categoryShares.map((slice) => (
-                  <View
-                    key={slice.id}
-                    style={[
-                      styles.sliceRow,
-                      {
-                        borderBottomColor: colors.hairline,
-                        paddingVertical: space.xs,
-                      },
-                    ]}
-                  >
-                    <View style={styles.sliceInfo}>
-                      <View
-                        style={[
-                          styles.colorDot,
-                          {
-                            backgroundColor: slice.colorHex,
-                            borderRadius: radius.pill,
-                          },
-                        ]}
-                      />
-                      <Text style={[type.body, { color: colors.text }]}>{slice.name}</Text>
-                      <Text style={[type.caption, { color: colors.textSecondary }]}>
-                        {slice.percentage}%
-                      </Text>
-                    </View>
-
-                    <MoneyText
-                      amountMinor={slice.totalMinor}
-                      currency={currency}
-                      role="body"
-                    />
+            {/* Category Slices List */}
+            <View style={{ marginTop: space.md, gap: space.sm }}>
+              {categoryShares.map((slice, idx) => (
+                <View
+                  key={slice.id}
+                  style={[
+                    styles.sliceRow,
+                    {
+                      borderBottomColor: colors.hairline,
+                      borderBottomWidth: idx < categoryShares.length - 1 ? StyleSheet.hairlineWidth : 0,
+                      paddingVertical: 10,
+                    },
+                  ]}
+                >
+                  <View style={styles.sliceInfo}>
+                    <View style={[styles.colorDot, { backgroundColor: slice.colorHex }]} />
+                    <Text style={[styles.sliceName, { color: colors.text }]}>
+                      {slice.name}
+                    </Text>
+                    <Text style={[styles.slicePercent, { color: colors.textSecondary }]}>
+                      {slice.percentage}%
+                    </Text>
                   </View>
-                ))}
-              </View>
+                  <MoneyText
+                    amountMinor={slice.totalMinor}
+                    currency={currency}
+                    kind="expense"
+                    role="figure"
+                    style={styles.sliceAmount}
+                  />
+                </View>
+              ))}
             </View>
-          </>
-        )}
-      </ScrollView>
+          </View>
+        </>
+      )}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   monthHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   arrowButton: {
-    justifyContent: 'center',
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  scroll: {
-    flex: 1,
-  },
-  content: {},
-  heroCard: {},
-  comparisonRow: {
+  monthPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingTop: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 999,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  chartSection: {},
+  monthPillText: {
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  heroCard: {
+    borderRadius: 22,
+    padding: 20,
+    borderWidth: 1,
+    shadowColor: '#1E293B',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.05,
+    shadowRadius: 14,
+    elevation: 2,
+    gap: 6,
+  },
+  heroCardLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  heroAmountText: {
+    fontSize: 34,
+    lineHeight: 40,
+    fontWeight: '800',
+  },
+  comparisonPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    gap: 4,
+    marginTop: 4,
+  },
+  comparisonText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  chartCard: {
+    borderRadius: 22,
+    padding: 18,
+    borderWidth: 1,
+    shadowColor: '#1E293B',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.05,
+    shadowRadius: 14,
+    elevation: 2,
+  },
+  chartHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+  },
   sliceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   sliceInfo: {
     flexDirection: 'row',
@@ -333,6 +433,19 @@ const styles = StyleSheet.create({
   colorDot: {
     width: 10,
     height: 10,
+    borderRadius: 5,
+  },
+  sliceName: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  slicePercent: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  sliceAmount: {
+    fontSize: 14,
+    fontWeight: '700',
   },
   centerContainer: {
     flex: 1,

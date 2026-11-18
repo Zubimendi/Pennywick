@@ -143,11 +143,18 @@ export default function HistoryScreen(): React.JSX.Element {
           },
         ]}
       >
-        <Text style={[type.title, { color: colors.text }]}>History</Text>
+        <Text style={[type.title, { color: colors.text, fontWeight: '800' }]}>History</Text>
         {totalRawCount > 0 && (
-          <Text style={[type.caption, { color: colors.textSecondary }]}>
-            {totalFilteredCount} {totalFilteredCount === 1 ? 'entry' : 'entries'}
-          </Text>
+          <View
+            style={[
+              styles.countBadge,
+              { backgroundColor: colors.surfaceMuted, borderColor: colors.border },
+            ]}
+          >
+            <Text style={[type.caption, { color: colors.textSecondary, fontWeight: '600' }]}>
+              {totalFilteredCount} {totalFilteredCount === 1 ? 'entry' : 'entries'}
+            </Text>
+          </View>
         )}
       </View>
 
@@ -277,7 +284,13 @@ const styles = StyleSheet.create({
   headerBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'baseline',
+    alignItems: 'center',
+  },
+  countBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
   },
   filtersScroll: {
     flexDirection: 'row',

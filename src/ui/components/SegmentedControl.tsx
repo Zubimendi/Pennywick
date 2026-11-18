@@ -16,6 +16,8 @@ export interface SegmentedControlProps<T extends string> {
   value: T;
   onChange: (value: T) => void;
   disabled?: boolean;
+  variant?: 'default' | 'pill';
+  activeBg?: string;
 }
 
 export function SegmentedControl<T extends string>({
@@ -23,24 +25,29 @@ export function SegmentedControl<T extends string>({
   value,
   onChange,
   disabled = false,
+  variant = 'default',
+  activeBg,
 }: SegmentedControlProps<T>): React.JSX.Element {
   const { colors, space, radius, type, hit } = useTheme();
+  const isPill = variant === 'pill';
 
   return (
     <View
       style={[
         styles.container,
         {
-          backgroundColor: colors.surfaceMuted,
-          borderRadius: radius.md,
-          padding: space.xxs,
-          minHeight: hit.min,
+          backgroundColor: isPill ? (colors.surfaceMuted) : colors.surfaceMuted,
+          borderRadius: isPill ? radius.pill : radius.md,
+          padding: isPill ? 4 : space.xxs,
+          minHeight: isPill ? 40 : hit.min,
         },
       ]}
       accessibilityRole="radiogroup"
     >
       {options.map((opt) => {
         const isSelected = opt.value === value;
+        const selectedBg = activeBg ?? (isPill ? colors.primary : colors.surface);
+        const selectedTextColor = isPill ? '#FFFFFF' : colors.text;
 
         return (
           <Press
@@ -53,10 +60,16 @@ export function SegmentedControl<T extends string>({
             style={[
               styles.segment,
               {
-                borderRadius: radius.sm,
-                backgroundColor: isSelected ? colors.surface : 'transparent',
-                borderColor: isSelected ? colors.border : 'transparent',
-                borderWidth: isSelected ? 1 : 0,
+                borderRadius: isPill ? radius.pill : radius.sm,
+                backgroundColor: isSelected ? selectedBg : 'transparent',
+                borderColor: isSelected && !isPill ? colors.border : 'transparent',
+                borderWidth: isSelected && !isPill ? 1 : 0,
+                paddingVertical: isPill ? 7 : 10,
+                shadowColor: isPill && isSelected ? '#000' : 'transparent',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: isPill && isSelected ? 0.08 : 0,
+                shadowRadius: 4,
+                elevation: isPill && isSelected ? 2 : 0,
               },
             ]}
           >
@@ -64,8 +77,9 @@ export function SegmentedControl<T extends string>({
               style={[
                 type.label,
                 {
-                  color: isSelected ? colors.text : colors.textSecondary,
+                  color: isSelected ? selectedTextColor : colors.textSecondary,
                   fontWeight: isSelected ? '700' : '500',
+                  fontSize: isPill ? 13 : 14,
                 },
               ]}
             >

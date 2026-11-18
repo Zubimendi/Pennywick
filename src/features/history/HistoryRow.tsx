@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { Press, MoneyText } from '../../ui/components';
 import { useTheme } from '../../ui/theme/useTheme';
+import { getPastelTheme } from '../../ui/theme/colors';
 import { TransactionWithCategory } from './historyTypes';
 
 interface HistoryRowProps {
@@ -22,11 +23,16 @@ export const HistoryRow = React.memo(function HistoryRow({
   onPress,
   onDelete,
 }: HistoryRowProps): React.JSX.Element {
-  const { colors, space, radius, type, hit } = useTheme();
+  const { colors, space, type, hit, isDark } = useTheme();
 
   const isExpense = transaction.kind === 'expense';
   const displayTitle = transaction.note ? transaction.note : transaction.categoryName;
   const displaySubtitle = transaction.note ? transaction.categoryName : undefined;
+
+  const hash = (transaction.categoryId || transaction.id)
+    .split('')
+    .reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const pastel = getPastelTheme(hash, isDark);
 
   const renderRightActions = (): React.JSX.Element => {
     return (
@@ -76,13 +82,15 @@ export const HistoryRow = React.memo(function HistoryRow({
           style={[
             styles.iconContainer,
             {
-              backgroundColor: colors.surfaceMuted,
-              borderRadius: radius.md,
+              backgroundColor: pastel.bg,
+              borderColor: pastel.border,
+              borderWidth: 1,
+              borderRadius: 22,
             },
           ]}
         >
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          <Ionicons name={transaction.categoryIcon as any} size={20} color={colors.primary} />
+          <Ionicons name={transaction.categoryIcon as any} size={20} color={pastel.accent} />
         </View>
 
         {/* Title and subtitle */}
@@ -132,11 +140,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   iconContainer: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 14,
   },
   textContainer: {
     flex: 1,

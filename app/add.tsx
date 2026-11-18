@@ -23,6 +23,7 @@ import {
   Press,
 } from '@/ui/components';
 import { useTheme } from '@/ui/theme/useTheme';
+import { getPastelTheme } from '@/ui/theme/colors';
 import { useUiStore } from '@/ui/theme/uiStore';
 import {
   applyKeypadInput,
@@ -44,7 +45,7 @@ const LARGE_AMOUNT_THRESHOLD_MINOR = 1000000000; // 10,000,000 major units
 
 export default function AddModal(): React.JSX.Element {
   const router = useRouter();
-  const { colors, space, type, hit } = useTheme();
+  const { colors, space, type, hit, isDark } = useTheme();
   const showToast = useUiStore((state) => state.showToast);
 
   const [kind, setKind] = useState<'expense' | 'income'>('expense');
@@ -242,6 +243,7 @@ export default function AddModal(): React.JSX.Element {
         <SegmentedControl
           value={kind}
           onChange={handleKindChange}
+          variant="pill"
           options={[
             { value: 'expense', label: 'Expense' },
             { value: 'income', label: 'Income' },
@@ -253,22 +255,51 @@ export default function AddModal(): React.JSX.Element {
           style={[
             styles.amountDisplay,
             {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-              paddingVertical: space.lg,
-              paddingHorizontal: space.md,
+              backgroundColor:
+                kind === 'expense'
+                  ? isDark
+                    ? '#2B171E'
+                    : '#FFF1F2'
+                  : isDark
+                    ? '#142921'
+                    : '#ECFDF5',
+              borderColor:
+                kind === 'expense'
+                  ? isDark
+                    ? '#4C2432'
+                    : '#FECDD3'
+                  : isDark
+                    ? '#1C4436'
+                    : '#A7F3D0',
+              paddingVertical: space.xl,
+              paddingHorizontal: space.lg,
             },
           ]}
         >
-          <Text style={[type.label, { color: colors.textSecondary }]}>Amount</Text>
+          <Text
+            style={[
+              type.caption,
+              {
+                color: colors.textSecondary,
+                fontWeight: '700',
+                letterSpacing: 1,
+                textTransform: 'uppercase',
+                marginBottom: 4,
+              },
+            ]}
+          >
+            {kind === 'expense' ? 'Amount to Spend' : 'Income Amount'}
+          </Text>
           <View style={styles.amountValueRow}>
             <Text
               style={[
                 type.hero,
                 {
                   color: kind === 'expense' ? colors.expense : colors.income,
-                  fontSize: 38,
-                  lineHeight: 44,
+                  fontSize: 42,
+                  lineHeight: 48,
+                  fontWeight: '800',
+                  letterSpacing: -1,
                 },
               ]}
               numberOfLines={1}
@@ -279,35 +310,63 @@ export default function AddModal(): React.JSX.Element {
           </View>
         </View>
 
-        {/* Category horizontal chips */}
+        {/* Category horizontal pastel cards (Dribbble Screen 4) */}
         <View style={{ gap: space.xs }}>
-          <Text style={[type.label, { color: colors.textSecondary }]}>Category</Text>
+          <Text style={[type.label, { color: colors.textSecondary, fontWeight: '700' }]}>
+            Category
+          </Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={[styles.categoryScroll, { gap: space.sm }]}
           >
-            {categories.map((cat) => {
+            {categories.map((cat, idx) => {
               const isSelected = cat.id === selectedCategoryId;
+              const pastel = getPastelTheme(idx, isDark);
               return (
-                <Chip
+                <Press
                   key={cat.id}
-                  label={cat.name}
-                  selected={isSelected}
                   onPress={() => setSelectedCategoryId(cat.id)}
-                  leading={
-                    <View
-                      style={[
-                        styles.catDot,
-                        {
-                          backgroundColor:
-                            colors.categories[cat.colorKey as keyof typeof colors.categories] ??
-                            colors.primary,
-                        },
-                      ]}
-                    />
-                  }
-                />
+                  accessibilityRole="button"
+                  accessibilityLabel={`Select ${cat.name}`}
+                  style={[
+                    styles.categoryCard,
+                    {
+                      backgroundColor: pastel.bg,
+                      borderColor: isSelected ? pastel.accent : pastel.border,
+                      borderWidth: isSelected ? 2 : 1,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.categoryIconCircle,
+                      {
+                        backgroundColor: pastel.iconBg,
+                        shadowColor: '#000000',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 4,
+                        elevation: 1,
+                      },
+                    ]}
+                  >
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    <Ionicons name={cat.icon as any} size={22} color={pastel.accent} />
+                  </View>
+                  <Text
+                    style={[
+                      styles.categoryCardLabel,
+                      {
+                        color: isDark ? '#FFFFFF' : '#1E293B',
+                        fontWeight: isSelected ? '700' : '600',
+                      },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {cat.name}
+                  </Text>
+                </Press>
               );
             })}
           </ScrollView>
@@ -400,7 +459,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 20,
+    shadowColor: '#1E293B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
   },
   amountValueRow: {
     marginTop: 4,
@@ -408,7 +472,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   categoryScroll: {
-    paddingVertical: 4,
+    paddingVertical: 6,
+  },
+  categoryCard: {
+    width: 92,
+    height: 100,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 8,
+    gap: 8,
+  },
+  categoryIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryCardLabel: {
+    fontSize: 12,
+    textAlign: 'center',
   },
   catDot: {
     width: 8,
